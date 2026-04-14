@@ -16,10 +16,21 @@
 <button onclick="joinGame()">Join Game</button>
 
 <script>
-var socket = io();
+var socket = io(window.location.origin);
 
 function createGame(){
+    let name = document.getElementById('name').value;
+
     socket.emit('create_game');
+
+    socket.on('game_created', (key)=>{
+        alert("Game Key: " + key);
+
+        localStorage.setItem("name", name);
+        localStorage.setItem("key", key);
+
+        socket.emit('join_game', {name, key});
+    });
 }
 
 socket.on('game_created', (key)=>{

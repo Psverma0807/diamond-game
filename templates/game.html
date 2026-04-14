@@ -15,7 +15,7 @@
 <div id="result"></div>
 
 <script>
-var socket = io();
+var socket = io(window.location.origin);
 
 let name = localStorage.getItem("name");
 let key = localStorage.getItem("key");
