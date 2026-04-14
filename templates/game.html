@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+</head>
+<body>
+
+<h2>Enter Number (0–100)</h2>
+
+<input id="num" type="number" min="0" max="100"><br>
+<button onclick="send()">Submit</button>
+
+<div id="result"></div>
+
+<script>
+var socket = io();
+
+let name = localStorage.getItem("name");
+let key = localStorage.getItem("key");
+
+function send(){
+    let number = document.getElementById("num").value;
+    socket.emit('submit_number', {name, key, number});
+}
+
+socket.on('round_result', (data)=>{
+    document.getElementById("result").innerHTML =
+        "Average: " + data.avg +
+        "<br>Closest: " + data.closest +
+        "<br><br>Scores:<br>" +
+        JSON.stringify(data.scores);
+});
+</script>
+
+</body>
+</html>
