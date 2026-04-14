@@ -41,8 +41,9 @@ function createGame(){
     });
 }
 
-socket.on('game_created', (key)=>{
-    alert("Game Key: " + key);
+socket.on('game_start', ()=>{
+    console.log("Game starting...");
+    window.location.href = "/game";
 });
 
 function joinGame(){
