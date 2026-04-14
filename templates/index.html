@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diamond Game</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: #111;
+            color: white;
+            text-align: center;
+        }
+
+        #game {
+            width: 100vw;
+            height: 80vh;
+            background: #222;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .diamond {
+            width: 20px;
+            height: 20px;
+            background: gold;
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+        }
+
+        #scoreboard {
+            height: 20vh;
+            background: black;
+            padding: 10px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>💎 Diamond Multiplayer Game</h2>
+
+<div id="game"></div>
+<div id="scoreboard"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/static/script.js"></script>
+
+</body>
+</html>

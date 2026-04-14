@@ -1,100 +1,97 @@
-from flask import Flask, render_template
+import os
+import eventlet
+eventlet.monkey_patch()
+
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room, emit
 import random
 import string
-import os
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
-games = {}
+app.config['SECRET_KEY'] = "secret"
 
-def generate_key():
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# ---------------- GAME STATE ----------------
+rooms = {}
+
+def generate_room():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
+def create_diamonds():
+    return [
+        {"id": i, "x": random.randint(50, 500), "y": random.randint(50, 400)}
+        for i in range(10)
+    ]
 
-class Game:
-    def __init__(self):
-        self.players = {}
-        self.inputs = {}
-        self.round = 1
-        self.king = None
-
-    def add_player(self, name):
-        if len(self.players) < 5:
-            self.players[name] = 0
-
-    def start(self):
-        self.king = random.choice(list(self.players.keys()))
-
-    def calculate(self):
-        avg = sum(self.inputs.values()) / len(self.inputs)
-        closest = min(self.inputs, key=lambda x: abs(self.inputs[x] - avg))
-
-        for p in self.players:
-            if p == closest:
-                self.players[p] += 1
-            else:
-                self.players[p] -= 1
-
-        return avg, closest
-
-
-@app.route('/')
-def home():
-    return render_template('home.html')
-
-
-@app.route('/game')
-def game():
-    return render_template('game.html')
-
-
-@socketio.on('create_game')
-def create_game():
-    key = generate_key()
-    games[key] = Game()
-    emit('game_created', key)
-
-
-@socketio.on('join_game')
+# ---------------- JOIN GAME ----------------
+@socketio.on("join_game")
 def join_game(data):
-    print("JOIN EVENT:", data)  
+    room = data.get("room")
 
-    key = data['key']
-    name = data['name']
+    if not room:
+        room = generate_room()
 
-    if key in games:
-        game = games[key]
-        game.add_player(name)
-        join_room(key)
+    join_room(room)
 
-        emit('update_players', list(game.players.keys()), room=key)
+    if room not in rooms:
+        rooms[room] = {
+            "players": {},
+            "diamonds": create_diamonds()
+        }
 
-        if len(game.players) == 5:
-            game.start()
-            emit('game_start', room=key)
+    rooms[room]["players"][request.sid] = {"score": 0}
 
+    emit("room_joined", {
+        "room": room,
+        "diamonds": rooms[room]["diamonds"],
+        "players": rooms[room]["players"]
+    }, room=room)
 
-@socketio.on('submit_number')
-def submit_number(data):
-    key = data['key']
-    name = data['name']
-    num = int(data['number'])
+# ---------------- COLLECT DIAMOND ----------------
+@socketio.on("collect_diamond")
+def collect_diamond(data):
+    room = data["room"]
+    diamond_id = data["diamond_id"]
+    sid = request.sid
 
-    game = games[key]
-    game.inputs[name] = num
+    if room not in rooms:
+        return
 
-    if len(game.inputs) == len(game.players):
-        avg, closest = game.calculate()
-        game.inputs = {}
+    # remove diamond
+    rooms[room]["diamonds"] = [
+        d for d in rooms[room]["diamonds"] if d["id"] != diamond_id
+    ]
 
-        emit('round_result', {
-            'avg': round(avg, 2),
-            'closest': closest,
-            'scores': game.players
-        }, room=key)
+    # update score
+    if sid in rooms[room]["players"]:
+        rooms[room]["players"][sid]["score"] += 1
 
+    emit("game_update", {
+        "diamonds": rooms[room]["diamonds"],
+        "players": rooms[room]["players"]
+    }, room=room)
 
+# ---------------- DISCONNECT ----------------
+@socketio.on("disconnect")
+def disconnect():
+    for room in list(rooms.keys()):
+        if request.sid in rooms[room]["players"]:
+            del rooms[room]["players"][request.sid]
+
+            emit("game_update", {
+                "diamonds": rooms[room]["diamonds"],
+                "players": rooms[room]["players"]
+            }, room=room)
+
+            break
+
+# ---------------- ROUTE ----------------
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+# ---------------- RUN ----------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host="0.0.0.0", port=port, debug=True)
+    socketio.run(app, host="0.0.0.0", port=port)
