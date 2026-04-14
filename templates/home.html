@@ -18,18 +18,26 @@
 <script>
 var socket = io(window.location.origin);
 
+// Create Game
 function createGame(){
     let name = document.getElementById('name').value;
 
+    if(!name){
+        alert("Enter name first");
+        return;
+    }
+
     socket.emit('create_game');
 
-    socket.on('game_created', (key)=>{
+    // listen ONCE
+    socket.once('game_created', (key)=>{
         alert("Game Key: " + key);
 
         localStorage.setItem("name", name);
         localStorage.setItem("key", key);
 
-        socket.emit('join_game', {name, key});
+        // NOW join properly
+        socket.emit('join_game', {name: name, key: key});
     });
 }
 

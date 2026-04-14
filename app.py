@@ -58,6 +58,8 @@ def create_game():
 
 @socketio.on('join_game')
 def join_game(data):
+    print("JOIN EVENT:", data)  
+
     key = data['key']
     name = data['name']
 
@@ -98,6 +100,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     socketio.run(app, host="0.0.0.0", port=port)
 
-@socketio.on('join_game')
-def join_game(data):
-    print("JOIN EVENT:", data)  
