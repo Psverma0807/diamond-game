@@ -2,10 +2,10 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, join_room, emit
 import random
 import string
+import os
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
-
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 games = {}
 
 def generate_key():
@@ -96,7 +96,5 @@ def submit_number(data):
 
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host="0.0.0.0", port=port)
-
+    socketio.run(app, host="0.0.0.0", port=port, debug=True)
